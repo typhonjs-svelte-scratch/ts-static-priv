@@ -1,0 +1,13 @@
+//// [tests/cases/compiler/jsFileCompilationClassContainingStaticPrivateMembers.ts] ////
+
+=== a.js ===
+class c {
+>c : Symbol(c, Decl(a.js, 0, 0))
+
+    static #privateStaticProp = 'Should be removed for JS declaration generation.';
+>#privateStaticProp : Symbol(c.#privateStaticProp, Decl(a.js, 0, 9))
+
+    static #privateStaticFn() { return 'Should be removed for JS declaration generation.'; }
+>#privateStaticFn : Symbol(c.#privateStaticFn, Decl(a.js, 1, 83))
+}
+

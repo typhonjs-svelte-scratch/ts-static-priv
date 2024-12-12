@@ -1,0 +1,20 @@
+//// [tests/cases/compiler/jsFileCompilationClassContainingStaticPrivateMembers.ts] ////
+
+=== a.js ===
+class c {
+>c : c
+>  : ^
+
+    static #privateStaticProp = 'Should be removed for JS declaration generation.';
+>#privateStaticProp : string
+>                   : ^^^^^^
+>'Should be removed for JS declaration generation.' : "Should be removed for JS declaration generation."
+>                                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    static #privateStaticFn() { return 'Should be removed for JS declaration generation.'; }
+>#privateStaticFn : () => string
+>                 : ^^^^^^^^^^^^
+>'Should be removed for JS declaration generation.' : "Should be removed for JS declaration generation."
+>                                                   : ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+}
+
