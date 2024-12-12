@@ -9749,13 +9749,30 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                     const valueDecl = s.valueDeclaration;
                     return !!valueDecl && !(isNamedDeclaration(valueDecl) && isPrivateIdentifier(valueDecl.name));
                 });
-                const hasPrivateIdentifier = some(symbolProps, s => {
+                let hasPrivateIdentifier = some(symbolProps, s => {
                     // `valueDeclaration` could be undefined if inherited from
                     // a union/intersection base type, but inherited properties
                     // don't matter here.
                     const valueDecl = s.valueDeclaration;
                     return !!valueDecl && isNamedDeclaration(valueDecl) && isPrivateIdentifier(valueDecl.name);
                 });
+                const publicProperties = flatMap<Symbol, ClassElement>(publicSymbolProps, p => serializePropertySymbolForClass(p, /*isStatic*/ false, baseTypes[0]));
+                // Consider static members empty if symbol also has function or module meaning - function namespacey emit will handle statics
+                const staticMembers = flatMap(
+                    filter(getPropertiesOfType(staticType), p => {
+                        if ((p.flags & SymbolFlags.Prototype) || p.escapedName === "prototype" || isNamespaceMember(p)) {
+                            return false;
+                        }
+                        // Check the value declaration to remove any that are privately scoped.
+                        const valueDecl = p.valueDeclaration;
+                        if (!!valueDecl && isNamedDeclaration(valueDecl) && isPrivateIdentifier(valueDecl.name)) {
+                            hasPrivateIdentifier = true;
+                            return false;
+                        }
+                        return true;
+                    }),
+                    p => serializePropertySymbolForClass(p, /*isStatic*/ true, staticBaseType),
+                );
                 // Boil down all private properties into a single one.
                 const privateProperties = hasPrivateIdentifier ?
                     [factory.createPropertyDeclaration(
@@ -9766,12 +9783,6 @@ export function createTypeChecker(host: TypeCheckerHost): TypeChecker {
                         /*initializer*/ undefined,
                     )] :
                     emptyArray;
-                const publicProperties = flatMap<Symbol, ClassElement>(publicSymbolProps, p => serializePropertySymbolForClass(p, /*isStatic*/ false, baseTypes[0]));
-                // Consider static members empty if symbol also has function or module meaning - function namespacey emit will handle statics
-                const staticMembers = flatMap(
-                    filter(getPropertiesOfType(staticType), p => !(p.flags & SymbolFlags.Prototype) && p.escapedName !== "prototype" && !isNamespaceMember(p)),
-                    p => serializePropertySymbolForClass(p, /*isStatic*/ true, staticBaseType),
-                );
                 // When we encounter an `X.prototype.y` assignment in a JS file, we bind `X` as a class regardless as to whether
                 // the value is ever initialized with a class or function-like value. For cases where `X` could never be
                 // created via `new`, we will inject a `private constructor()` declaration to indicate it is not createable.
